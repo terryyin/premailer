@@ -166,6 +166,7 @@ class Premailer
   # @option options [Boolean] :preserve_reset Whether to preserve styles associated with the MailChimp reset code. Default is true.
   # @option options [Boolean] :with_html_string Whether the html param should be treated as a raw string. Default is false.
   # @option options [Boolean] :verbose Whether to print errors and warnings to <tt>$stderr</tt>.  Default is false.
+  # @option options [Boolean] :io_exceptions Throws exceptions on I/O errors.
   # @option options [Boolean] :include_link_tags Whether to include css from <tt>link rel=stylesheet</tt> tags.  Default is true.
   # @option options [Boolean] :include_style_tags Whether to include css from <tt>style</tt> tags.  Default is true.
   # @option options [String] :input_encoding Manually specify the source documents encoding. This is a good idea. Default is ASCII-8BIT.
@@ -262,7 +263,9 @@ protected
       end
 
       load_css_from_string(css_block)
-    rescue; end
+    rescue => e
+      raise e if @options[:io_exceptions]
+    end
   end
 
   def load_css_from_string(css_string)
@@ -296,10 +299,10 @@ protected
               link_uri = tag.attributes['href'].to_s.sub(@base_url.to_s, '')
             else
               link_uri = File.join(File.dirname(@html_file), tag.attributes['href'].to_s.sub!(@base_url.to_s, ''))
-              # if the file does not exist locally, try to grab the remote reference
-              unless File.exists?(link_uri)
-                link_uri = Premailer.resolve_link(tag.attributes['href'].to_s, @html_file)
-              end
+            end
+            # if the file does not exist locally, try to grab the remote reference
+            unless File.exists?(link_uri)
+              link_uri = Premailer.resolve_link(tag.attributes['href'].to_s, @html_file)
             end
           else
             link_uri = tag.attributes['href'].to_s
